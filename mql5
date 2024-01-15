@@ -1,0 +1,76 @@
+mql5
+//+------------------------------------------------------------------+
+//|                                            Blitz MT5            |
+//|                                 Developed by Forex Robot Easy Team|
+//|                                                      forexroboteasy.com|
+//+------------------------------------------------------------------+
+
+// Global variables
+input double riskPercentage = 1.0; // Risk percentage per trade
+input double takeProfit = 100.0; // Take profit in pips
+input double stopLoss = 50.0; // Stop loss in pips
+
+//+------------------------------------------------------------------+
+//| Expert initialization function                                   |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+    // Add initialization code here
+
+    return(INIT_SUCCEEDED);
+}
+
+//+------------------------------------------------------------------+
+//| Expert deinitialization function                                 |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+    // Add deinitialization code here
+}
+
+//+------------------------------------------------------------------+
+//| Expert tick function                                             |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+    // Calculate lot size based on risk percentage
+    double lotSize = AccountBalance() * riskPercentage / 100.0 / (stopLoss * MarketInfo(Symbol(), MODE_TICKSIZE) * MarketInfo(Symbol(), MODE_TICKVALUE));
+
+    // Calculate trade entry and exit points
+    double entryPrice = Bid;
+    double takeProfitPrice = entryPrice + takeProfit * MarketInfo(Symbol(), MODE_POINT);
+    double stopLossPrice = entryPrice - stopLoss * MarketInfo(Symbol(), MODE_POINT);
+
+    // Check if there is an existing open position
+    if (PositionsTotal() == 0) 
+    {
+        // Open a buy position
+        if (OrderSend(Symbol(), OP_BUY, lotSize, entryPrice, 0, stopLossPrice, takeProfitPrice, 'Buy Order', 0, 0, Green) == -1)
+        {
+            Print('Error opening buy order: ', GetLastError());
+        }
+    }
+    else 
+    {
+        // Close existing position if it meets the take profit or stop loss conditions
+        for (int i = 0; i < PositionsTotal(); i++) 
+        {
+            if (PositionSelectByIndex(i) == false) continue;
+
+            if (PositionGetDouble(POSITION_TP) == takeProfitPrice || PositionGetDouble(POSITION_SL) == stopLossPrice) 
+            {
+                if (PositionClose(PositionGetTicket(), PositionGetDouble(POSITION_VOLUME)) == false)
+                {
+                    Print('Error closing position: ', GetLastError());
+                }
+            }
+        }
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Custom functions                                                 |
+//+------------------------------------------------------------------+
+// Add any custom functions here
+
+//+------------------------------------------------------------------+
